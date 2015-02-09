@@ -1,10 +1,14 @@
+#define WINVER 0x500
+#define _WIN32_WINNT 0x500
 #include <windows.h>
 #include <stdio.h>
 #include <fcntl.h>
+#include <Commctrl.h>
+
 #include "resource.h"
 #include "mdi.h"
 HINSTANCE ghinstance=0;
-HWND ghmainframe=0,ghmdiclient=0;
+HWND ghmainframe=0,ghmdiclient=0,ghstatusbar=0;
 HMENU ghmenu=0;
 
 int move_console()
@@ -101,6 +105,30 @@ static LRESULT CALLBACK subclass_main_proc(HWND hwnd,UINT msg,WPARAM wparam,LPAR
 	}
 	return CallWindowProc(old_win_sub_proc,hwnd,msg,wparam,lparam);
 }
+int create_status_bar_parts(HWND hwnd,HWND hstatus)
+{
+	if(hwnd!=0 && hstatus!=0){
+		int parts[2]={-1,-1};
+		RECT rect={0};
+		GetClientRect(hwnd,&rect);
+		parts[0]=rect.right/2;
+		return SendMessage(hstatus,SB_SETPARTS,2,&parts);
+	}
+	return FALSE;
+}
+int set_statusbar_text(HWND hstatus,int part,char *fmt,...)
+{
+	if(hstatus!=0){
+		char str[100]={0};
+		va_list va;
+		va_start(va,fmt);
+		_vsnprintf(str,sizeof(str),fmt,va);
+		va_end(va);
+		str[sizeof(str)-1]=0;
+		return SendMessage(hstatus,SB_SETTEXT,part,str);
+	}
+	return FALSE;
+}
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
 	if(!(msg==WM_ENTERIDLE||msg==WM_SETCURSOR)){
@@ -110,6 +138,13 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 	switch(msg){
 	case WM_CREATE:
 		old_win_sub_proc=SetWindowLong(hwnd,GWL_WNDPROC,subclass_main_proc);
+		ghstatusbar=CreateStatusWindow(WS_CHILD|WS_VISIBLE,"",hwnd,IDC_STATUS);
+		create_status_bar_parts(hwnd,ghstatusbar);
+		break;
+	case WM_SIZE:
+		{
+			resize_main_window(hwnd);
+		}
 		break;
 	case WM_COMMAND:
 		{
@@ -157,10 +192,19 @@ int custom_dispatch(MSG *msg)
 	}
 	return FALSE;
 }
+int init_common_ctrls()
+{
+    INITCOMMONCONTROLSEX ctrls;
+	ctrls.dwSize=sizeof(ctrls);
+    ctrls.dwICC = ICC_LISTVIEW_CLASSES|ICC_TREEVIEW_CLASSES|ICC_BAR_CLASSES;
+	InitCommonControlsEx(&ctrls);
+	return 0;
+}
 int APIENTRY WinMain(HINSTANCE hinstance,HINSTANCE hprevinstance,LPSTR cmdline,int cmdshow)
 {
 	MSG msg;
 	open_console();
+	init_common_ctrls();
 	ghmenu=LoadMenu(hinstance, MAKEINTRESOURCE(IDR_MENU1));
 	ghmainframe=create_mainwindow(WndProc,ghmenu,hinstance);
 	ghmdiclient=create_mdiclient(ghmainframe,ghmenu,hinstance,IDC_MDI_CLIENT);
