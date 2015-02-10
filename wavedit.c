@@ -68,7 +68,30 @@ void hide_console()
 		SetForegroundWindow(hcon);
 	}
 }
-
+int create_status_bar_parts(HWND hwnd,HWND hstatus)
+{
+	if(hwnd!=0 && hstatus!=0){
+		int parts[2]={-1,-1};
+		RECT rect={0};
+		GetClientRect(hwnd,&rect);
+		parts[0]=rect.right/2;
+		return SendMessage(hstatus,SB_SETPARTS,2,&parts);
+	}
+	return FALSE;
+}
+int set_statusbar_text(HWND hstatus,int part,char *fmt,...)
+{
+	if(hstatus!=0){
+		char str[100]={0};
+		va_list va;
+		va_start(va,fmt);
+		_vsnprintf(str,sizeof(str),fmt,va);
+		va_end(va);
+		str[sizeof(str)-1]=0;
+		return SendMessage(hstatus,SB_SETTEXT,part,str);
+	}
+	return FALSE;
+}
 
 HWND create_mainwindow(WNDPROC wndproc,HMENU hmenu,HINSTANCE hinstance)
 {
@@ -105,30 +128,7 @@ static LRESULT CALLBACK subclass_main_proc(HWND hwnd,UINT msg,WPARAM wparam,LPAR
 	}
 	return CallWindowProc(old_win_sub_proc,hwnd,msg,wparam,lparam);
 }
-int create_status_bar_parts(HWND hwnd,HWND hstatus)
-{
-	if(hwnd!=0 && hstatus!=0){
-		int parts[2]={-1,-1};
-		RECT rect={0};
-		GetClientRect(hwnd,&rect);
-		parts[0]=rect.right/2;
-		return SendMessage(hstatus,SB_SETPARTS,2,&parts);
-	}
-	return FALSE;
-}
-int set_statusbar_text(HWND hstatus,int part,char *fmt,...)
-{
-	if(hstatus!=0){
-		char str[100]={0};
-		va_list va;
-		va_start(va,fmt);
-		_vsnprintf(str,sizeof(str),fmt,va);
-		va_end(va);
-		str[sizeof(str)-1]=0;
-		return SendMessage(hstatus,SB_SETTEXT,part,str);
-	}
-	return FALSE;
-}
+
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
 	if(!(msg==WM_ENTERIDLE||msg==WM_SETCURSOR)){
@@ -208,6 +208,7 @@ int APIENTRY WinMain(HINSTANCE hinstance,HINSTANCE hprevinstance,LPSTR cmdline,i
 	ghmenu=LoadMenu(hinstance, MAKEINTRESOURCE(IDR_MENU1));
 	ghmainframe=create_mainwindow(WndProc,ghmenu,hinstance);
 	ghmdiclient=create_mdiclient(ghmainframe,ghmenu,hinstance,IDC_MDI_CLIENT);
+	register_mdi_classes(hinstance);
 	ShowWindow(ghmainframe,cmdshow);
 	UpdateWindow(ghmainframe);
     while(GetMessage(&msg,NULL,0,0)){
