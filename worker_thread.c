@@ -1,4 +1,6 @@
 #include <windows.h>
+#include "win_types.h"
+
 HANDLE event=0;
 HANDLE event_idle=0;
 HANDLE hworker=0;
@@ -6,6 +8,11 @@ int task=0;
 enum{
 	TASK_OPEN_=1
 };
+int task_create_win()
+{
+	task=TASK_OPEN_;
+	SetEvent(event);
+}
 void __cdecl thread(void *args)
 {
 	int id;
@@ -23,6 +30,11 @@ void __cdecl thread(void *args)
 		id=WaitForSingleObject(event,INFINITE);
 		if(id==WAIT_OBJECT_0){
 			switch(task){
+			case TASK_OPEN_:
+				{
+					test_window();
+				}
+				break;
 			}
 		}
 		ResetEvent(event);
@@ -43,7 +55,7 @@ int get_guid_str(char *pre,char *str,int str_len)
 	str[str_len-1]=0;
 	return TRUE;
 }
-int start_worker_thread()
+int start_worker_thread(HWND hwnd)
 {
 	char str[80]={0};
 	static HANDLE *events[2]={0,0};
@@ -65,7 +77,7 @@ int start_worker_thread()
 	args=events;
 	hworker=_beginthread(thread,0,args);
 	if(hworker==-1){
-		MessageBox(NULL,"Failed to create worker thread","Error",MB_OK|MB_SYSTEMMODAL);
+		MessageBox(hwnd,"Failed to create worker thread","Error",MB_OK|MB_SYSTEMMODAL);
 		hworker=0;
 	}
 	return TRUE;

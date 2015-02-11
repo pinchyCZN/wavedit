@@ -125,6 +125,10 @@ SOURCE=.\worker_thread.c
 
 SOURCE=.\mdi.h
 # End Source File
+# Begin Source File
+
+SOURCE=.\win_types.h
+# End Source File
 # End Group
 # Begin Group "Resource Files"
 

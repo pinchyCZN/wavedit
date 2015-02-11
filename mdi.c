@@ -1,25 +1,18 @@
 #include <windows.h>
 #include "resource.h"
 extern HINSTANCE ghinstance;
+extern HWND ghmainframe,ghmdiclient,ghstatusbar;
+
 const char *WAVEDITWINCLASS="wavewindow";
 
-typedef struct{
-	char fname[MAX_PATH];
-	float zoom;
-	int scrollx,scrolly;
-	short *wave_data;
-	__int64 offset;
-	int stereo;
-	int sample_rate;
-	HWND hwnd;
-	HWND hctrl;
-}WEDIT_WINDOW;
+#include "win_types.h"
+WEDIT_WINDOW wedit_windows[40]={0};
 
 int create_wedit_win(HWND hwnd,HINSTANCE hinstance,WEDIT_WINDOW *win)
 {
     win->hctrl=CreateWindowEx(WS_EX_TOPMOST,"button","", 
-      WS_TABSTOP|WS_CHILD|WS_VISIBLE,
-        0, 0, 0, 0, hwnd, IDC_WAVE_WIN, hinstance, 0);
+      WS_TABSTOP|WS_CHILD|WS_VISIBLE|BS_OWNERDRAW,
+        0, 0, 20, 20, hwnd, IDC_WAVE_WIN, hinstance, 0);
 }
 LRESULT CALLBACK WaveMDIWinProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
@@ -37,6 +30,17 @@ LRESULT CALLBACK WaveMDIWinProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
 
 		}
         break;
+	case WM_DRAWITEM:
+		{
+			DRAWITEMSTRUCT *di=lparam;
+			if(di!=0 && di->CtlType==ODT_BUTTON){
+				HDC hdc=di->hDC;
+				printf("owndraw\n");
+				DrawText(hdc,"pewp",-1,&di->rcItem,DT_LEFT|DT_NOPREFIX);
+				return TRUE;
+			}
+		}
+		break;
 	}
 	return DefMDIChildProc(hwnd, msg, wparam, lparam);
 }
@@ -87,4 +91,10 @@ int create_wavedit_window(HWND hmdiclient,WEDIT_WINDOW *win)
 	cs.lParam=win;
 	handle=SendMessage(hmdiclient,WM_MDICREATE,0,&cs);
 	return handle;
+}
+
+int test_window()
+{
+
+	create_wavedit_window(ghmdiclient,&wedit_windows[0]);
 }

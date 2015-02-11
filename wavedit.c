@@ -122,6 +122,7 @@ HWND create_mainwindow(WNDPROC wndproc,HMENU hmenu,HINSTANCE hinstance)
 static WNDPROC old_win_sub_proc=0;
 static LRESULT CALLBACK subclass_main_proc(HWND hwnd,UINT msg,WPARAM wparam,LPARAM lparam)
 {
+	if(FALSE)
 	if(!(msg==WM_ENTERIDLE||msg==WM_SETCURSOR)){
 		printf("sub:");
 		print_msg(msg,lparam,wparam,hwnd);
@@ -140,6 +141,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 		old_win_sub_proc=SetWindowLong(hwnd,GWL_WNDPROC,subclass_main_proc);
 		ghstatusbar=CreateStatusWindow(WS_CHILD|WS_VISIBLE,"",hwnd,IDC_STATUS);
 		create_status_bar_parts(hwnd,ghstatusbar);
+		start_worker_thread(hwnd);
 		break;
 	case WM_SIZE:
 		{
@@ -152,6 +154,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 			switch(item){
 			case IDC_NEW2:
 				printf("new wave\n");
+				task_create_win();
 				break;
 			}
 		}
