@@ -159,6 +159,12 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 			}
 		}
 		break;
+	case WM_DROPFILES:
+		{
+			if(wparam)
+				process_drop(hwnd,wparam);
+		}
+		break;
 	case WM_MENUSELECT:
 		{
 

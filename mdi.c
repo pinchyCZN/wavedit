@@ -93,8 +93,39 @@ int create_wavedit_window(HWND hmdiclient,WEDIT_WINDOW *win)
 	return handle;
 }
 
+int create_new_wave_win(WEDIT_WINDOW **win)
+{
+	if(win){
+		create_wavedit_window(ghmdiclient,&wedit_windows[0]);
+		*win=&wedit_windows[0];
+		return TRUE;
+	}
+	return FALSE;
+}
 int test_window()
 {
 
 	create_wavedit_window(ghmdiclient,&wedit_windows[0]);
+}
+
+int process_drop(HWND hwnd,HANDLE hdrop)
+{
+	int i,count,is_file=FALSE;
+	char str[MAX_PATH];
+
+	count=DragQueryFile(hdrop,-1,NULL,0);
+	for(i=0;i<count;i++){
+		str[0]=0;
+		DragQueryFile(hdrop,i,str,sizeof(str));
+		if(str[0]==0)
+			continue;
+		if(!is_path_directory(str)){
+			is_file=TRUE;
+			break;
+		}
+	}
+	DragFinish(hdrop);
+	if(is_file)
+		task_open_file(str);
+	return 0;
 }

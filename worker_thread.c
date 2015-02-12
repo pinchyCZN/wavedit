@@ -1,17 +1,33 @@
 #include <windows.h>
+#include <stdio.h>
 #include "win_types.h"
 
+extern HWND ghmainframe;
 HANDLE event=0;
 HANDLE event_idle=0;
 HANDLE hworker=0;
 int task=0;
+char task_info[1024]={0};
+
 enum{
-	TASK_OPEN_=1
+	TASK_OPEN_=1,
+	TASK_OPEN_FILE
 };
 int task_create_win()
 {
 	task=TASK_OPEN_;
 	SetEvent(event);
+	return 0;
+}
+int task_open_file(char *fname)
+{
+	if(fname){
+		_snprintf(task_info,sizeof(task_info),"%s",fname);
+		task_info[sizeof(task_info)-1]=0;
+		task=TASK_OPEN_FILE;
+		SetEvent(event);
+	}
+	return 0;
 }
 void __cdecl thread(void *args)
 {
@@ -33,6 +49,22 @@ void __cdecl thread(void *args)
 			case TASK_OPEN_:
 				{
 					test_window();
+				}
+				break;
+			case TASK_OPEN_FILE:
+				{
+					char fname[MAX_PATH]={0};
+					int type;
+					_snprintf(fname,sizeof(fname),"%s",task_info);
+					type=check_file_type(fname);
+					if(!type){
+						MessageBox(ghmainframe,fname,"UKNOWN FILE TYPE",MB_OK|MB_SYSTEMMODAL);
+					}
+					else{
+						void *wedit_win=0;
+						create_new_wave_win(&wedit_win);
+						open_file_type(fname,type,wedit_win);
+					}
 				}
 				break;
 			}
