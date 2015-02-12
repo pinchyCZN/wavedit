@@ -1,5 +1,6 @@
 #include <windows.h>
 #include <stdio.h>
+#include "win_types.h"
 
 enum{
 	FTYPE_UNKOWN=0,
@@ -38,7 +39,24 @@ int check_file_type(char *fname)
 	}
 	return type;
 }
-
+int open_wave_file(char *fname,WEDIT_WINDOW *wedit_win)
+{
+	FILE *f;
+	f=fopen(fname,"rb");
+	if(f){
+		unsigned char *header[44]={0};
+		int *iptr;
+		short *sptr;
+		fread(header,1,sizeof(header),f);
+		iptr=header+40;
+		wedit_win->wave_data=malloc(iptr[0]);
+		if(wedit_win->wave_data){
+			fread(wedit_win->wave_data,1,iptr[0],f);
+			wedit_win->wave_len=iptr[0];
+		}
+		fclose(f);
+	}
+}
 int open_file_type(char *fname,int type,void *wedit_win)
 {
 	if(fname==0 || type==0 || wedit_win==0)
@@ -46,7 +64,7 @@ int open_file_type(char *fname,int type,void *wedit_win)
 	switch(type){
 	case FTYPE_WAVE:
 		{
-			
+			open_wave_file(fname,wedit_win);
 		}
 		break;
 	}

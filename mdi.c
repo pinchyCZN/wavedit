@@ -10,12 +10,18 @@ WEDIT_WINDOW wedit_windows[40]={0};
 
 int create_wedit_win(HWND hwnd,HINSTANCE hinstance,WEDIT_WINDOW *win)
 {
+	RECT rect={0};
+	GetClientRect(hwnd,&rect);
     win->hctrl=CreateWindowEx(WS_EX_TOPMOST,"button","", 
       WS_TABSTOP|WS_CHILD|WS_VISIBLE|BS_OWNERDRAW,
-        0, 0, 20, 20, hwnd, IDC_WAVE_WIN, hinstance, 0);
+        rect.left, rect.top, rect.right, rect.bottom, hwnd, IDC_WAVE_WIN, hinstance, 0);
 }
 LRESULT CALLBACK WaveMDIWinProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
+	if(!(msg==WM_ENTERIDLE||msg==WM_SETCURSOR)){
+		printf("mdi:");
+		print_msg(msg,lparam,wparam,hwnd);
+	}
 	switch(msg){
 	case WM_CREATE:
 		{
@@ -30,12 +36,26 @@ LRESULT CALLBACK WaveMDIWinProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
 
 		}
         break;
+	case WM_SIZE:
+		{
+			RECT rect={0};
+			HWND hbutton=GetDlgItem(hwnd,IDC_WAVE_WIN);
+			GetClientRect(hwnd,&rect);
+			SetWindowPos(hbutton,NULL,rect.left,rect.top,rect.right,rect.bottom,SWP_NOZORDER);
+		}
+		break;
 	case WM_DRAWITEM:
 		{
 			DRAWITEMSTRUCT *di=lparam;
 			if(di!=0 && di->CtlType==ODT_BUTTON){
 				HDC hdc=di->hDC;
+				HBRUSH hbrush;
+				RECT rect=di->rcItem;
 				printf("owndraw\n");
+				hbrush=CreateSolidBrush(rand());
+				rect.right-=10;
+				rect.bottom-=10;
+				FillRect(hdc,&rect,hbrush);
 				DrawText(hdc,"pewp",-1,&di->rcItem,DT_LEFT|DT_NOPREFIX);
 				return TRUE;
 			}
