@@ -8,6 +8,61 @@ const char *WAVEDITWINCLASS="wavewindow";
 #include "win_types.h"
 WEDIT_WINDOW wedit_windows[40]={0};
 
+int find_wedit_win(HWND hwnd,WEDIT_WINDOW **win)
+{
+	int i;
+	for(i=0;i<sizeof(wedit_windows)/sizeof(WEDIT_WINDOW);i++){
+		if(hwnd==wedit_windows[i].hwnd){
+			*win=&wedit_windows[i];
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+int draw_wave_win(HWND hwnd,DRAWITEMSTRUCT *di)
+{
+	WEDIT_WINDOW *win=0;
+	if(find_wedit_win(hwnd,&win)){
+		if(win->wave_data && win->wave_len){
+			RECT *rect=&di->rcItem;
+			int i;
+			float dlen,xstride,ystride;
+			float width,height;
+			HBRUSH brush;
+			HGDIOBJ hold;
+			width=rect->right-rect->left;
+			height=rect->bottom-rect->top;
+			dlen=win->wave_len;
+			if(width<=0 || height<=0)
+				return FALSE;
+			xstride=dlen/width;
+			if(xstride<1)
+				xstride=1;
+			if(height>0)
+				ystride=0xFFFF/height;
+			else
+				ystride=0xFFFF;
+			MoveToEx(di->hDC,0,(rect->bottom-rect->top)/2,NULL);
+			FillRect(di->hDC,&di->rcItem,(HBRUSH)COLOR_BACKGROUND+1);
+			brush=CreateSolidBrush(0xFF00);
+			hold=SelectObject(di->hDC,brush);
+			for(i=0;i<dlen;i+=xstride/2){
+				short *wav=win->wave_data+i;
+				int pos;
+				if(i/2>=dlen)
+					break;
+				pos=wav[0];
+				if(pos!=0)
+					pos=pos;
+				LineTo(di->hDC,i,(pos/ystride)+(height/2));
+			}
+			if(hold)
+				SelectObject(di->hDC,hold);
+			if(brush)
+				DeleteObject(brush);
+		}
+	}
+}
 int create_wedit_win(HWND hwnd,HINSTANCE hinstance,WEDIT_WINDOW *win)
 {
 	RECT rect={0};
@@ -48,15 +103,7 @@ LRESULT CALLBACK WaveMDIWinProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
 		{
 			DRAWITEMSTRUCT *di=lparam;
 			if(di!=0 && di->CtlType==ODT_BUTTON){
-				HDC hdc=di->hDC;
-				HBRUSH hbrush;
-				RECT rect=di->rcItem;
-				printf("owndraw\n");
-				hbrush=CreateSolidBrush(rand());
-				rect.right-=10;
-				rect.bottom-=10;
-				FillRect(hdc,&rect,hbrush);
-				DrawText(hdc,"pewp",-1,&di->rcItem,DT_LEFT|DT_NOPREFIX);
+				draw_wave_win(hwnd,di);
 				return TRUE;
 			}
 		}

@@ -41,31 +41,39 @@ int check_file_type(char *fname)
 }
 int open_wave_file(char *fname,WEDIT_WINDOW *wedit_win)
 {
+	int result=FALSE;
 	FILE *f;
 	f=fopen(fname,"rb");
 	if(f){
-		unsigned char *header[44]={0};
+		unsigned char header[44]={0};
 		int *iptr;
 		short *sptr;
+		int fsize;
 		fread(header,1,sizeof(header),f);
 		iptr=header+40;
-		wedit_win->wave_data=malloc(iptr[0]);
+		fsize=iptr[0];
+		wedit_win->wave_data=malloc(fsize);
 		if(wedit_win->wave_data){
-			fread(wedit_win->wave_data,1,iptr[0],f);
-			wedit_win->wave_len=iptr[0];
+			fread(wedit_win->wave_data,1,fsize,f);
+			wedit_win->wave_len=fsize;
 		}
 		fclose(f);
+		result=TRUE;
 	}
+	return result;
 }
-int open_file_type(char *fname,int type,void *wedit_win)
+int open_file_type(char *fname,int type,WEDIT_WINDOW *wedit_win)
 {
+	int result=FALSE;
 	if(fname==0 || type==0 || wedit_win==0)
 		return FALSE;
 	switch(type){
 	case FTYPE_WAVE:
 		{
-			open_wave_file(fname,wedit_win);
+			result=open_wave_file(fname,wedit_win);
 		}
 		break;
 	}
+	InvalidateRect(wedit_win->hwnd,NULL,TRUE);
+	return result;
 }
