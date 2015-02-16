@@ -50,6 +50,12 @@ int open_wave_file(char *fname,WEDIT_WINDOW *wedit_win)
 		short *sptr;
 		int fsize;
 		fread(header,1,sizeof(header),f);
+		sptr=header+22;
+		wedit_win->channels=sptr[0];
+		iptr=header+24;
+		wedit_win->sample_rate=iptr[0];
+		sptr=header+34;
+		wedit_win->bits=sptr[0];
 		iptr=header+40;
 		fsize=iptr[0];
 		wedit_win->wave_data=malloc(fsize);
