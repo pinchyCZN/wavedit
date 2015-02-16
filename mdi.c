@@ -25,11 +25,13 @@ int draw_wave_win(HWND hwnd,DRAWITEMSTRUCT *di)
 	if(find_wedit_win(hwnd,&win)){
 		if(win->wave_data && win->wave_len){
 			RECT *rect=&di->rcItem;
-			int i;
-			float dlen,xstride,ystride;
-			float width,height;
-			HBRUSH brush;
-			HGDIOBJ hold;
+			unsigned int i;
+			int dlen,xstride,ystride;
+			int width,height;
+			char *wav_start;
+			char *wav_end;
+			HPEN pen=0;
+			HGDIOBJ hold=0;
 			width=rect->right-rect->left;
 			height=rect->bottom-rect->top;
 			dlen=win->wave_len;
@@ -42,24 +44,28 @@ int draw_wave_win(HWND hwnd,DRAWITEMSTRUCT *di)
 				ystride=0xFFFF/height;
 			else
 				ystride=0xFFFF;
+			FillRect(di->hDC,&di->rcItem,GetSysColorBrush(COLOR_BACKGROUND));
+			pen=CreatePen(PS_SOLID,0,GetSysColor(COLOR_WINDOWTEXT));//RGB(0,0xFF,0));
+			if(pen)
+				hold=SelectObject(di->hDC,pen);
 			MoveToEx(di->hDC,0,(rect->bottom-rect->top)/2,NULL);
-			FillRect(di->hDC,&di->rcItem,(HBRUSH)COLOR_BACKGROUND+1);
-			brush=CreateSolidBrush(0xFF00);
-			hold=SelectObject(di->hDC,brush);
-			for(i=0;i<dlen;i+=xstride/2){
-				short *wav=win->wave_data+i;
+			wav_start=win->wave_data;
+			wav_end=(char *)win->wave_data+win->wave_len;
+			for(i=0;i<width;i++){
+				short *wav=wav_start;
 				int pos;
-				if(i/2>=dlen)
+				if(wav>=wav_end)
 					break;
 				pos=wav[0];
-				if(pos!=0)
+				if(pos>1000)
 					pos=pos;
 				LineTo(di->hDC,i,(pos/ystride)+(height/2));
+				wav_start+=xstride;
 			}
 			if(hold)
 				SelectObject(di->hDC,hold);
-			if(brush)
-				DeleteObject(brush);
+			if(pen)
+				DeleteObject(pen);
 		}
 	}
 }
