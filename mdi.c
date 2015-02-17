@@ -1,4 +1,7 @@
 #include <windows.h>
+#include <math.h>
+#include <stdio.h>
+
 #include "resource.h"
 extern HINSTANCE ghinstance;
 extern HWND ghmainframe,ghmdiclient,ghstatusbar;
@@ -179,6 +182,36 @@ int test_window()
 {
 
 	create_wavedit_window(ghmdiclient,&wedit_windows[0]);
+	{
+		int size=0x100000*30;
+		short *buf=malloc(size);
+		WEDIT_WINDOW *win=&wedit_windows[0];
+		if(buf){
+			int i;
+			float a=0;
+			for(i=0;i<size/2;i++){
+				buf[i]=(short)((float)0x7FFF*sin(a));
+				a+=3.14/100.;
+			}
+			win->bits=16;
+			win->channels=1;
+			sprintf(win->fname,"%s","b:\\test.wav");
+			win->offset=0;
+			win->sample_rate=44100;
+			win->wave_data=buf;
+			win->wave_len=size;
+			InvalidateRect(win->hwnd,0,TRUE);
+			if(FALSE)
+			{
+				FILE *f;
+				f=fopen("b:\\test.raw","wb");
+				if(f){
+					fwrite(win->wave_data,1,win->wave_len,f);
+					fclose(f);
+				}
+			}
+		}
+	}
 }
 
 int process_drop(HWND hwnd,HANDLE hdrop)

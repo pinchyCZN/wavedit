@@ -11,8 +11,15 @@ char task_info[1024]={0};
 
 enum{
 	TASK_OPEN_=1,
-	TASK_OPEN_FILE
+	TASK_OPEN_FILE,
+	TASK_TEST1
 };
+int task_test1()
+{
+	task=TASK_TEST1;
+	SetEvent(event);
+	return 0;
+}
 int task_create_win()
 {
 	task=TASK_OPEN_;
@@ -46,6 +53,9 @@ void __cdecl thread(void *args)
 		id=WaitForSingleObject(event,INFINITE);
 		if(id==WAIT_OBJECT_0){
 			switch(task){
+			case TASK_TEST1:
+				test_window();
+				break;
 			case TASK_OPEN_:
 				{
 					test_window();

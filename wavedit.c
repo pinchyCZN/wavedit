@@ -142,6 +142,10 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 		ghstatusbar=CreateStatusWindow(WS_CHILD|WS_VISIBLE,"",hwnd,IDC_STATUS);
 		create_status_bar_parts(hwnd,ghstatusbar);
 		start_worker_thread(hwnd);
+		PostMessage(hwnd,WM_APP,0,0);
+		break;
+	case WM_APP:
+		task_test1();
 		break;
 	case WM_SIZE:
 		{
