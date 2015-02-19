@@ -22,53 +22,59 @@ int find_wedit_win(HWND hwnd,WEDIT_WINDOW **win)
 	}
 	return FALSE;
 }
+int create_wave_image(WEDIT_WINDOW *win)
+{
+	if(win->wimage && win->width && win->height 
+		&& win->wave_data && win->wave_len){
+		unsigned __int64 i;
+		char *end;
+		int w,h;
+		int bstep=win->bits>>3;
+		if(bstep<=0)
+			bstep=1;
+		w=win->height;
+		h=win->width;
+		end=(char*)win->wave_data+win->wave_len;
+		for(i=0;i<win->wave_len;i+=bstep){
+			unsigned int a,j;
+			short *data=(char*)win->wave_data+i;
+			if(data>=end)
+				break;
+			if(data[0]){
+				a=0xFFFF000/data[0];
+				a=(h<<12)/a;
+			}
+			else
+				a=0;
+			for(j=0;j<a;j++){
+				if(i<w)
+					win->wimage[i/bstep*3+j*w*3]=0xFF;
+				else
+					break;
+			}
+			if(i>=w)
+				break;
+			
+		}
+	}
+}
 int draw_wave_win(HWND hwnd,DRAWITEMSTRUCT *di)
 {
 	WEDIT_WINDOW *win=0;
 	if(find_wedit_win(hwnd,&win)){
-		if(win->wave_data && win->wave_len){
-			RECT *rect=&di->rcItem;
-			unsigned int i;
-			int dlen,xstride,ystride;
-			int width,height;
-			char *wav_start;
-			char *wav_end;
-			HPEN pen=0;
-			HGDIOBJ hold=0;
-			width=rect->right-rect->left;
-			height=rect->bottom-rect->top;
-			dlen=win->wave_len;
-			if(width<=0 || height<=0)
-				return FALSE;
-			xstride=dlen/width;
-			if(xstride<1)
-				xstride=1;
-			if(height>0)
-				ystride=0xFFFF/height;
-			else
-				ystride=0xFFFF;
-			FillRect(di->hDC,&di->rcItem,GetSysColorBrush(COLOR_BACKGROUND));
-			pen=CreatePen(PS_SOLID,0,GetSysColor(COLOR_WINDOWTEXT));//RGB(0,0xFF,0));
-			if(pen)
-				hold=SelectObject(di->hDC,pen);
-			MoveToEx(di->hDC,0,(rect->bottom-rect->top)/2,NULL);
-			wav_start=win->wave_data;
-			wav_end=(char *)win->wave_data+win->wave_len;
-			for(i=0;i<width;i++){
-				short *wav=wav_start;
-				int pos;
-				if(wav>=wav_end)
-					break;
-				pos=wav[0];
-				if(pos>1000)
-					pos=pos;
-				LineTo(di->hDC,i,(pos/ystride)+(height/2));
-				wav_start+=xstride;
-			}
-			if(hold)
-				SelectObject(di->hDC,hold);
-			if(pen)
-				DeleteObject(pen);
+		if(win->wimage && win->width && win->height){
+			BITMAPINFO bmi;
+			HDC hdc;
+			int w,h;
+			w=win->width;h=win->height;
+			memset(&bmi,0,sizeof(BITMAPINFO));
+			bmi.bmiHeader.biBitCount=24;
+			bmi.bmiHeader.biWidth=w;
+			bmi.bmiHeader.biHeight=-h;
+			bmi.bmiHeader.biPlanes=1;
+			bmi.bmiHeader.biSize=sizeof(bmi);
+			hdc=di->hDC;
+			SetDIBitsToDevice(hdc,0,0,w,h,0,0,0,h,win->wimage,&bmi,DIB_RGB_COLORS);
 		}
 	}
 }
@@ -102,10 +108,22 @@ LRESULT CALLBACK WaveMDIWinProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
         break;
 	case WM_SIZE:
 		{
-			RECT rect={0};
+			WEDIT_WINDOW *win=0;
+			int w,h;
 			HWND hbutton=GetDlgItem(hwnd,IDC_WAVE_WIN);
-			GetClientRect(hwnd,&rect);
-			SetWindowPos(hbutton,NULL,rect.left,rect.top,rect.right,rect.bottom,SWP_NOZORDER);
+			w=LOWORD(lparam);
+			h=HIWORD(lparam);
+			SetWindowPos(hbutton,NULL,0,0,w,h,SWP_NOZORDER);
+			if(find_wedit_win(hwnd,&win)){
+				w&=-4;
+				h&=-4;
+				win->width=w;
+				win->height=h;
+				win->wimage=realloc(win->wimage,w*h*3);
+				if(win->wimage)
+					memset(win->wimage,0,w*h*3);
+				create_wave_image(win);
+			}
 		}
 		break;
 	case WM_DRAWITEM:
@@ -200,6 +218,7 @@ int test_window()
 			win->sample_rate=44100;
 			win->wave_data=buf;
 			win->wave_len=size;
+			create_wave_image(win);
 			InvalidateRect(win->hwnd,0,TRUE);
 			if(FALSE)
 			{
