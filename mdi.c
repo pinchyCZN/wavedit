@@ -24,37 +24,39 @@ int find_wedit_win(HWND hwnd,WEDIT_WINDOW **win)
 }
 int create_wave_image(WEDIT_WINDOW *win)
 {
-	if(win->wimage && win->width && win->height 
-		&& win->wave_data && win->wave_len){
-		unsigned __int64 i;
-		char *end;
+	if(win->wave_data && win->wave_len){
+		RECT rect={0};
 		int w,h;
-		int bstep=win->bits>>3;
-		if(bstep<=0)
-			bstep=1;
-		w=win->height;
-		h=win->width;
-		end=(char*)win->wave_data+win->wave_len;
-		for(i=0;i<win->wave_len;i+=bstep){
-			unsigned int a,j;
-			short *data=(char*)win->wave_data+i;
-			if(data>=end)
-				break;
-			if(data[0]){
-				a=0xFFFF000/data[0];
-				a=(h<<12)/a;
+		GetClientRect(GetDesktopWindow(),&rect);
+		w=rect.right-rect.left;
+		h=rect.bottom-rect.top;
+		if(w>0 && h>0){
+			char *p;
+			p=realloc(win->wimage,w*h*3);
+			if(p){
+				__int64 i;
+				char *buf;
+				int stride,index=0;
+				buf=win->wimage=p;
+				stride=win->wave_len/w;
+				for(i=0;i<win->wave_len;i+=2){
+					short s,*d=(char*)win->wave_data+i;
+					float a,b;
+					s=d[0];
+					if(s){
+						a=(float)s/0xFFFF;
+						a=h*a;
+						if(s>0){
+							int j;
+							for(j=0;j<s;j++){
+								//buf[index*3+
+							}
+						}
+					}
+
+
+				}
 			}
-			else
-				a=0;
-			for(j=0;j<a;j++){
-				if(i<w)
-					win->wimage[i/bstep*3+j*w*3]=0xFF;
-				else
-					break;
-			}
-			if(i>=w)
-				break;
-			
 		}
 	}
 }
@@ -108,22 +110,11 @@ LRESULT CALLBACK WaveMDIWinProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
         break;
 	case WM_SIZE:
 		{
-			WEDIT_WINDOW *win=0;
 			int w,h;
 			HWND hbutton=GetDlgItem(hwnd,IDC_WAVE_WIN);
 			w=LOWORD(lparam);
 			h=HIWORD(lparam);
 			SetWindowPos(hbutton,NULL,0,0,w,h,SWP_NOZORDER);
-			if(find_wedit_win(hwnd,&win)){
-				w&=-4;
-				h&=-4;
-				win->width=w;
-				win->height=h;
-				win->wimage=realloc(win->wimage,w*h*3);
-				if(win->wimage)
-					memset(win->wimage,0,w*h*3);
-				create_wave_image(win);
-			}
 		}
 		break;
 	case WM_DRAWITEM:
